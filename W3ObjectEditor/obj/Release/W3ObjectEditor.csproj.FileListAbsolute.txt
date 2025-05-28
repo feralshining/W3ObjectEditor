@@ -1,0 +1,13 @@
+C:\Users\s4chd\source\repos\W3UEditor\W3UEditor\bin\Release\W3ObjectEditor.exe.config
+C:\Users\s4chd\source\repos\W3UEditor\W3UEditor\bin\Release\W3ObjectEditor.exe
+C:\Users\s4chd\source\repos\W3UEditor\W3UEditor\bin\Release\W3ObjectEditor.pdb
+C:\Users\s4chd\source\repos\W3UEditor\W3UEditor\obj\Release\W3ObjectEditor.csproj.AssemblyReference.cache
+C:\Users\s4chd\source\repos\W3UEditor\W3UEditor\obj\Release\W3ObjectEditor.csproj.SuggestedBindingRedirects.cache
+C:\Users\s4chd\source\repos\W3UEditor\W3UEditor\obj\Release\W3ObjectEditor.Form1.resources
+C:\Users\s4chd\source\repos\W3UEditor\W3UEditor\obj\Release\W3ObjectEditor.Properties.Resources.resources
+C:\Users\s4chd\source\repos\W3UEditor\W3UEditor\obj\Release\W3ObjectEditor.csproj.GenerateResource.cache
+C:\Users\s4chd\source\repos\W3UEditor\W3UEditor\obj\Release\W3ObjectEditor.csproj.CoreCompileInputs.cache
+C:\Users\s4chd\source\repos\W3UEditor\W3UEditor\obj\Release\W3ObjectEditor.csproj.Fody.CopyLocal.cache
+C:\Users\s4chd\source\repos\W3UEditor\W3UEditor\obj\Release\W3ObjectEditor.csproj.Fody.RuntimeCopyLocal.cache
+C:\Users\s4chd\source\repos\W3UEditor\W3UEditor\obj\Release\W3ObjectEditor.exe
+C:\Users\s4chd\source\repos\W3UEditor\W3UEditor\obj\Release\W3ObjectEditor.pdb

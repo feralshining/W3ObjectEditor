@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32630.192
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "W3ObjectEditor", "W3UEditor\W3ObjectEditor.csproj", "{FF9E127D-316A-4315-AE69-C0EF92BB751C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "W3ObjectEditor", "W3ObjectEditor\W3ObjectEditor.csproj", "{FF9E127D-316A-4315-AE69-C0EF92BB751C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -100,7 +100,7 @@ namespace W3ObjectEditor
         {
             using (OpenFileDialog ofd = new OpenFileDialog
             {
-                Filter = "W3 Object Files (*.w3u;*.w3a)|*.w3u;*.w3a|All files (*.*)|*.*",
+                Filter = "W3 Object Files (*.w3u;*.w3a;*.w3h;*.w3t)|*.w3u;*.w3a;*.w3h;*.w3t|All files (*.*)|*.*",
                 Title = "W3 오브젝트 파일 열기"
             })
             {
@@ -118,13 +118,13 @@ namespace W3ObjectEditor
                         dataGridView1.Columns[5].AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
 
                     string ext = Path.GetExtension(ofd.FileName).ToLower();
-                    bool showAbilityColumns = (ext == ".w3a");
+                    bool showLevelPointerColumns = (ext == ".w3a");
 
                     if (dataGridView1.Columns.Contains("Level"))
-                        dataGridView1.Columns["Level"].Visible = showAbilityColumns;
+                        dataGridView1.Columns["Level"].Visible = showLevelPointerColumns;
 
                     if (dataGridView1.Columns.Contains("DataPointer"))
-                        dataGridView1.Columns["DataPointer"].Visible = showAbilityColumns;
+                        dataGridView1.Columns["DataPointer"].Visible = showLevelPointerColumns;
 
                     currentFilePath = ofd.FileName;
                     UpdateStatusBar(dataTable.Rows.Count, 0, 0);
@@ -223,7 +223,7 @@ namespace W3ObjectEditor
 
             using (SaveFileDialog sfd = new SaveFileDialog
             {
-                Filter = "W3 Object Files (*.w3u;*.w3a)|*.w3u;*.w3a",
+                Filter = "W3 Object Files (*.w3u;*.w3a;*.w3h;*.w3t)|*.w3u;*.w3a;*.w3h;*.w3t",
                 Title = "다른 이름으로 저장",
             })
             {
@@ -245,7 +245,7 @@ namespace W3ObjectEditor
         {
             if (!(dataGridView1.DataSource is DataTable dt))
             {
-                MessageBox.Show("먼저 W3U/W3A 파일을 열어주세요.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("먼저 W3 오브젝트 파일을 열어주세요.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 

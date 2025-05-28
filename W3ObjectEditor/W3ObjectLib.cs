@@ -40,6 +40,14 @@ namespace W3ObjectEditor
                     return 0;
             }
         }
+        public static string ReadNullTerminatedString(BinaryReader br)
+        {
+            var bytes = new List<byte>();
+            byte b;
+            while ((b = br.ReadByte()) != 0)
+                bytes.Add(b);
+            return Encoding.UTF8.GetString(bytes.ToArray());
+        }
 
         /// <summary>
         /// 문자열을 null 종료 문자열로 바이너리로 기록
@@ -65,14 +73,14 @@ namespace W3ObjectEditor
     /// <summary>
     /// 객체 하나에 대한 전체 수정 내용을 담는 클래스
     /// </summary>
-    public class ObjectUnit
+    public class W3Object
     {
         public string Source { get; set; }
         public string OriginalID { get; set; }
         public string NewID { get; set; }
         public List<ObjectModification> Modifications { get; set; }
 
-        public ObjectUnit()
+        public W3Object()
         {
             Modifications = new List<ObjectModification>();
         }
@@ -85,7 +93,7 @@ namespace W3ObjectEditor
     {
         private static string GetObjectType(string path) => Path.GetExtension(path).ToLowerInvariant();
 
-        private static bool IsAbilityFile(string path) => GetObjectType(path) == ".w3a";
+        private static bool UsesLevelAndPointer(string ext) => ext == ".w3a"; //|| ext == ".w3h";
 
         public static async Task<DataTable> LoadAsync(string path)
         {
@@ -96,13 +104,13 @@ namespace W3ObjectEditor
         {
             var ext = GetObjectType(path);
             var dt = CreateDataTable();
+            bool useLevel = UsesLevelAndPointer(ext);
 
             using (var br = new BinaryReader(File.Open(path, FileMode.Open)))
             {
                 int version = br.ReadInt32();
-                bool isW3a = IsAbilityFile(path);
-                ReadTable(br, "Original", dt, isW3a);
-                ReadTable(br, "Custom", dt, isW3a);
+                ReadTable(br, "Original", dt, useLevel);
+                ReadTable(br, "Custom", dt, useLevel);
             }
 
             return dt;
@@ -113,17 +121,18 @@ namespace W3ObjectEditor
             using (BinaryWriter bw = new BinaryWriter(File.Create(path)))
             {
                 bw.Write(1); // version
-                bool isW3a = IsAbilityFile(path);
-                WriteTable(bw, dt, "Original", isW3a);
-                WriteTable(bw, dt, "Custom", isW3a);
+                var ext = GetObjectType(path);
+                bool useLevel = UsesLevelAndPointer(ext);
+                WriteTable(bw, dt, "Original", useLevel);
+                WriteTable(bw, dt, "Custom", useLevel);
             }
         }
 
-        private static void WriteTable(BinaryWriter bw, DataTable dt, string source, bool isW3a)
+        private static void WriteTable(BinaryWriter bw, DataTable dt, string source, bool useLevel)
         {
             var rows = dt.AsEnumerable()
-                    .Where(r => r["Source"].ToString() == source)
-                    .ToList();
+                         .Where(r => r["Source"].ToString() == source)
+                         .ToList();
 
             var grouped = rows.GroupBy(r => new
             {
@@ -150,16 +159,13 @@ namespace W3ObjectEditor
                     string valueStr = row["Value"].ToString();
 
                     int valueType = Util.ParseTypeCode(typeStr);
-                    int level = dt.Columns.Contains("Level") && row["Level"] != DBNull.Value
-                                ? Convert.ToInt32(row["Level"]) : 0;
-
-                    int dataPointer = dt.Columns.Contains("DataPointer") && row["DataPointer"] != DBNull.Value
-                                      ? Convert.ToInt32(row["DataPointer"]) : 0;
+                    int level = dt.Columns.Contains("Level") && row["Level"] != DBNull.Value ? Convert.ToInt32(row["Level"]) : 0;
+                    int dataPointer = dt.Columns.Contains("DataPointer") && row["DataPointer"] != DBNull.Value ? Convert.ToInt32(row["DataPointer"]) : 0;
 
                     bw.Write(Encoding.ASCII.GetBytes(Util.Fix4(fieldId)));
                     bw.Write(valueType);
 
-                    if (isW3a) // 능력 파일일 경우 level/dataPointer 포함
+                    if (useLevel)
                     {
                         bw.Write(level);
                         bw.Write(dataPointer);
@@ -185,66 +191,83 @@ namespace W3ObjectEditor
                             bw.Write(0);
                             break;
                     }
-                    bw.Write(0); 
+
+                    bw.Write(0); // End marker
                 }
             }
         }
 
-        private static void ReadTable(BinaryReader br, string source, DataTable dt, bool isW3a)
+        private static void ReadTable(BinaryReader br, string source, DataTable dt, bool useLevel)
         {
-            int unitCount = br.ReadInt32();
+            if (br.BaseStream.Position + 4 > br.BaseStream.Length) return;
+            int objectCount = br.ReadInt32();
 
-            for (int i = 0; i < unitCount; i++)
+            for (int i = 0; i < objectCount; i++)
             {
+                if (br.BaseStream.Position + 12 > br.BaseStream.Length) break;
                 string originalId = Encoding.ASCII.GetString(br.ReadBytes(4));
                 string newId = Encoding.ASCII.GetString(br.ReadBytes(4));
                 int modCount = br.ReadInt32();
 
                 for (int j = 0; j < modCount; j++)
                 {
+                    if (br.BaseStream.Position + 8 > br.BaseStream.Length) break;
                     string fieldId = Encoding.ASCII.GetString(br.ReadBytes(4));
                     int valueType = br.ReadInt32();
 
                     int level = 0;
                     int dataPointer = 0;
-
-                    if (isW3a)
+                    if (useLevel)
                     {
+                        if (br.BaseStream.Position + 8 > br.BaseStream.Length) break;
                         level = br.ReadInt32();
                         dataPointer = br.ReadInt32();
                     }
 
-                    object value;
-                    if (valueType == 0)
-                        value = br.ReadInt32();
-                    else if (valueType == 1 || valueType == 2)
-                        value = br.ReadSingle();
-                    else if (valueType == 3)
-                        value = ReadNullTerminatedString(br);
-                    else
-                        value = $"[type:{valueType}]";
+                    object value = null;
 
-                    br.ReadInt32(); // End marker
+                    try
+                    {
+                        switch (valueType)
+                        {
+                            case 0:
+                                value = br.ReadInt32();
+                                break;
+                            case 1:
+                            case 2:
+                                value = br.ReadSingle();
+                                break;
+                            case 3:
+                                value = Util.ReadNullTerminatedString(br);
+                                break;
+                            default:
+                                if (valueType > 100)
+                                    value = br.ReadInt32();
+                                else
+                                    value = "[type:" + valueType + "]";
+                                break;
+                        }
+                    }
+                    catch
+                    {
+                        value = "[invalid]";
+                    }
+
+                    if (br.BaseStream.Position + 4 <= br.BaseStream.Length)
+                        br.ReadInt32();
+                    else
+                        break;
 
                     dt.Rows.Add(source,
-                                originalId,
-                                source == "Original" ? "(base)" : newId,
-                                fieldId,
-                                TypeName(valueType),
-                                value.ToString(),
-                                level,
-                                dataPointer);
+                        originalId,
+                        source == "Original" ? "(base)" : newId,
+                        fieldId,
+                        TypeName(valueType),
+                        value?.ToString() ?? "",
+                        level,
+                        dataPointer);
                 }
             }
-        }
-
-        private static string ReadNullTerminatedString(BinaryReader br)
-        {
-            var bytes = new List<byte>();
-            byte b;
-            while ((b = br.ReadByte()) != 0)
-                bytes.Add(b);
-            return Encoding.UTF8.GetString(bytes.ToArray());
         }
 
         private static string TypeName(int type)
