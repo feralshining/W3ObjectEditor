@@ -146,6 +146,10 @@ namespace W3ObjectEditor
             {
                 string origId = objectGroup.Key.OriginalID;
                 string newId = objectGroup.Key.NewID;
+                if (source == "Original")
+                {
+                    newId = origId;
+                }
 
                 bw.Write(Encoding.ASCII.GetBytes(Util.Fix4(origId)));
                 bw.Write(Encoding.ASCII.GetBytes(Util.Fix4(newId)));

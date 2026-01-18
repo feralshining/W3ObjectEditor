@@ -84,9 +84,6 @@ namespace W3ObjectEditor
 
             string str = value.ToString();
 
-            // 텍스트로 들어온 \n, \r\n을 실제 줄바꿈으로 변환
-            str = str.Replace("\\n", "\n").Replace("\\r\\n", "\n");
-
             // 줄바꿈, 쉼표, 따옴표 있으면 전체 감싸고 내부 따옴표 escape
             if (str.Contains(",") || str.Contains("\"") || str.Contains("\n") || str.Contains("\r"))
             {
