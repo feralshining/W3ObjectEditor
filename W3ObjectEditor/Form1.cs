@@ -240,10 +240,18 @@ namespace W3ObjectEditor
         }
         private void btnImport_Click(object sender, EventArgs e)
         {
-            if (!(dataGridView1.DataSource is DataTable dt))
+            var dt = dataGridView1.DataSource as DataTable;
+            if (dt == null)
             {
-                MessageBox.Show("먼저 W3 오브젝트 파일을 열어주세요.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
+                dt = W3ObjectFileHandler.CreateEmptyDataTable();
+                dataGridView1.DataSource = dt;
+                pictureBox1.Visible = false;
+
+                if (dataGridView1.Columns.Contains("Level"))
+                    dataGridView1.Columns["Level"].Visible = true;
+
+                if (dataGridView1.Columns.Contains("DataPointer"))
+                    dataGridView1.Columns["DataPointer"].Visible = true;
             }
 
             using (OpenFileDialog ofd = new OpenFileDialog

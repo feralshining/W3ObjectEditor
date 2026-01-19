@@ -286,6 +286,11 @@ namespace W3ObjectEditor
             }
         }
 
+        internal static DataTable CreateEmptyDataTable()
+        {
+            return CreateDataTable();
+        }
+
         private static DataTable CreateDataTable()
         {
             var dt = new DataTable();
