@@ -305,4 +305,162 @@ namespace W3ObjectEditor
             return dt;
         }
     }
+
+    public static class W3ObjectCsvHandler
+    {
+        public static DataTable Load(string path)
+        {
+            var dt = W3ObjectFileHandler.CreateEmptyDataTable();
+
+            using (var sr = new StreamReader(path, Encoding.UTF8))
+            {
+                string header = sr.ReadLine();
+                if (header == null)
+                {
+                    return dt;
+                }
+
+                var currentLine = new StringBuilder();
+                string rawLine;
+                while ((rawLine = sr.ReadLine()) != null)
+                {
+                    currentLine.AppendLine(rawLine);
+                    string line = currentLine.ToString();
+
+                    int quoteCount = line.Count(c => c == '"');
+                    if (quoteCount % 2 != 0)
+                    {
+                        continue;
+                    }
+
+                    string[] parts = ParseCsvLine(line.TrimEnd('\r', '\n'));
+                    currentLine.Clear();
+
+                    if (parts.Length < 6)
+                    {
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(parts[0]) || string.IsNullOrWhiteSpace(parts[4]))
+                    {
+                        continue;
+                    }
+
+                    var newRow = dt.NewRow();
+                    newRow["Source"] = parts[0];
+                    newRow["OriginalID"] = parts[1];
+                    newRow["NewID"] = parts[2];
+                    newRow["FieldID"] = parts[3];
+                    newRow["Type"] = parts[4];
+                    newRow["Value"] = string.IsNullOrWhiteSpace(parts[5]) ? "" : parts[5];
+
+                    if (parts.Length > 6 && int.TryParse(parts[6], out int level))
+                        newRow["Level"] = level;
+                    else
+                        newRow["Level"] = 0;
+
+                    if (parts.Length > 7 && int.TryParse(parts[7], out int dataPointer))
+                        newRow["DataPointer"] = dataPointer;
+                    else
+                        newRow["DataPointer"] = 0;
+
+                    dt.Rows.Add(newRow);
+                }
+            }
+
+            return dt;
+        }
+
+        public static void Save(string path, DataTable dt)
+        {
+            if (dt == null)
+                throw new ArgumentNullException(nameof(dt));
+
+            bool includeExtraColumns = dt.Columns.Contains("Level") && dt.Columns.Contains("DataPointer");
+
+            using (var sw = new StreamWriter(path, false, Encoding.UTF8))
+            {
+                var headerCols = new List<string> { "Source", "OriginalID", "NewID", "FieldID", "Type", "Value" };
+                if (includeExtraColumns)
+                {
+                    headerCols.Add("Level");
+                    headerCols.Add("DataPointer");
+                }
+
+                sw.WriteLine(string.Join(",", headerCols));
+
+                foreach (DataRow row in dt.Rows)
+                {
+                    var fields = new List<string>
+                    {
+                        EscapeCsv(row["Source"]),
+                        EscapeCsv(row["OriginalID"]),
+                        EscapeCsv(row["NewID"]),
+                        EscapeCsv(row["FieldID"]),
+                        EscapeCsv(row["Type"]),
+                        EscapeCsv(row["Value"]?.ToString().Replace("\n", "\\n"))
+                    };
+
+                    if (includeExtraColumns)
+                    {
+                        fields.Add(EscapeCsv(row["Level"]));
+                        fields.Add(EscapeCsv(row["DataPointer"]));
+                    }
+
+                    sw.WriteLine(string.Join(",", fields));
+                }
+            }
+        }
+
+        private static string[] ParseCsvLine(string line)
+        {
+            var result = new List<string>();
+            var current = new StringBuilder();
+            bool inQuotes = false;
+
+            for (int i = 0; i < line.Length; i++)
+            {
+                char c = line[i];
+
+                if (c == '"')
+                {
+                    if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
+                    {
+                        current.Append('"');
+                        i++;
+                    }
+                    else
+                    {
+                        inQuotes = !inQuotes;
+                    }
+                }
+                else if (c == ',' && !inQuotes)
+                {
+                    result.Add(current.ToString());
+                    current.Clear();
+                }
+                else
+                {
+                    current.Append(c);
+                }
+            }
+
+            result.Add(current.ToString());
+            return result.ToArray();
+        }
+
+        private static string EscapeCsv(object value)
+        {
+            if (value == null || value == DBNull.Value) return "";
+
+            string str = value.ToString();
+
+            if (str.Contains(",") || str.Contains("\"") || str.Contains("\n") || str.Contains("\r"))
+            {
+                return "\"" + str.Replace("\"", "\"\"") + "\"";
+            }
+
+            return str;
+        }
+    }
 }
